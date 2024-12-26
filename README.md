@@ -1,3 +1,4 @@
+## Introduction
 script to generate nftables sets from geoip data: ASN, country and city
 
 features:
@@ -13,7 +14,7 @@ features:
 - low memory consumption, only selected data (country, asn, city) is loaded
 
 
-# install
+## install
 
     # the script needs python requests to function
     pip3 install requests
@@ -22,9 +23,9 @@ features:
     chmod +x /usr/local/bin/nft_geo_pvc.py 
     
 
-# use 
+## use 
 
-## step 1: generate list
+### step 1: generate list
 generate a set that contains:
 - all ip's from Belgium AND 
 - all ip's from cloudflare (as 13335) AND
@@ -43,7 +44,7 @@ generate a set that contains:
 
 now we have a combined nftables set in */etc/geo_set.nft* 
 
-## step 2: use geo set
+### step 2: use geo set
 we can now use this file in our main firewall script [/etc/nftables]
 the default set names are *geo_set_ipv4* and *geo_set_ipv6*
 
@@ -66,7 +67,7 @@ the default set names are *geo_set_ipv4* and *geo_set_ipv6*
     }
    
 
-## step 3: (optional) update geo ip set
+### step 3: (optional) update geo ip set
 As an example we add the city of Himeji to the set.  
 The following command generates, saves AND applies a new set without reloading the firewall.
 Only the geo_set_* will be updated, no changes are applied to the main nftables configuration.
@@ -81,13 +82,13 @@ Can be uses in a cronjob or triggerd manually.
     applied
     done
 
-# philosofie
+## philosofie
 generate a named nft set with the option of combining different sources (country, city, asn) 
 and using the set in your nftables script.  
 updating of the sets can happen atomic  without reloading the firewall. (without interruption or resetting the counters)
 
 
 
-# update geo ip sets
+## update geo ip sets
 it is recommended to run the nft_geo_pvc.py script monthly as the free db-ip.com databases are updated monthly
 
