@@ -2,7 +2,7 @@ this wil allow all traffic but drop traffic originating from The netherlands
 
 # step 1: generate geo set
 
-    ./nft_geo_pvc.py --country nl
+    nft_geo_pvc.py --country nl
 
 # step 2: firewall configuration
 
@@ -39,7 +39,7 @@ watch the syslog for geo ip dropped traffic
 # optional: update list
 updating the geo ip set is possible without reloading te firewall
 
-    ./nft_geo_pvc.py --country nl --apply
+    nft_geo_pvc.py --country nl --apply
 
 it is recommended to do this at least monthly, as the free db-ip.com databases are updated monthly 
 

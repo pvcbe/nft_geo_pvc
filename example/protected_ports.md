@@ -3,7 +3,7 @@ other traffic to 80 and 443 is not allowed
 
 # step 1: generate geo set
 
-    ./nft_geo_pvc.py --asn 13335
+    nft_geo_pvc.py --asn 13335
 
 # step 2: firewall configuration
 
@@ -44,7 +44,7 @@ watch the syslog for geo ip dropped traffic
 # optional: update list
 updating the geo ip set is possible without reloading te firewall
 
-    ./nft_geo_pvc.py --asn 13335 --apply
+    nft_geo_pvc.py --asn 13335 --apply
 
 it is recommended to do this at least monthly, as the free db-ip.com databases are updated monthly 
 

@@ -2,7 +2,7 @@ this wil allow all traffic from Japan and drop all other traffic
 
 # step 1: generate geo set
 
-    ./nft_geo_pvc.py --country jp
+    nft_geo_pvc.py --country jp
 
 # step 2: firewall configuration
 
@@ -41,7 +41,7 @@ watch the syslog for geo ip dropped traffic
 # optional: update list
 updating the geo ip set is possible without reloading te firewall
 
-    ./nft_geo_pvc.py --country jp --apply
+    nft_geo_pvc.py --country jp --apply
 
 it is recommended to do this at least monthly, as the free db-ip.com databases are updated monthly 
 

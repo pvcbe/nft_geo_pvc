@@ -5,10 +5,10 @@ other traffic is accepted
 # step 1: generate geo set
 
     # generate the allow list with the default prefix: geo_set_ipv4 and geo_set_ipv6
-    ./nft_geo_pvc.py --country be
+    nft_geo_pvc.py --country be
     # this will create a set with prefix ratelimit (generates ratelimit_ipv4 and ratelimit_ipv6) for dutch ip's
     # in the "filter" table and save the set in /etc/ratelimit.nft
-    ./nft_geo_pvc.py --nft-table filter --set-prefix ratelimit --country nl
+    nft_geo_pvc.py --nft-table filter --set-prefix ratelimit --country nl
 
 # step 2: firewall configuration
 

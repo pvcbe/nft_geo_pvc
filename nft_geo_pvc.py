@@ -6,15 +6,15 @@ downloads and generate a nft set from country, city or asn from free https://db-
 all filters will be added in one ipv4 set and one ipv6.  set table and name is selectable
 
 example:
-   ./nft-geo.py --country be
+   nft-geo.py --country be
 	generate a sets with default name: geo_set_ipv4 and geo_set_ipv6,
         stored in file /etc/geo_set.nft
         the sets are now usable in your own firewall rules under the "raw" table
-   ./nft-geo.py --country be --apply
+   nft-geo.py --country be --apply
 	generate and apply a sets with default name: geo_set_ipv4 and geo_set_ipv6,
         stored in file /etc/geo_set.nft
         the sets are now usable in your own firewall rules under the "raw" table
-   ./nft-geo.py --country nl --set-prefix unwanted --nft-table filter --apply
+   nft-geo.py --country nl --set-prefix unwanted --nft-table filter --apply
 	generate and apply a sets with name: unwanted_ipv4 and unwanted_ipv6
         stored in file /etc/unwanted.nft
         wich are usable in your own firewall rules under the "filter" table
