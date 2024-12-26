@@ -30,17 +30,16 @@ generate a set that contains:
 - all ip's from cloudflare (as 13335) AND
 - all ip's from hetzner
 
-     
-     ./nft_geo_pvc.py --country be --asn 13335 "Hetzner Online GmbH"
-
-     downloading dbip-country-lite-2024-12.csv
-     downloading dbip-city-lite-2024-12.csv
-     downloading dbip-asn-lite-2024-12.csv
-     generating /etc/geo_set.nft with set prefix geo_set for:
-     - autonomous system: 13335, hetzner online gmbh
-     - countries:         be
-     - cities:
-     done
+         nft_geo_pvc.py --country be --asn 13335 "Hetzner Online GmbH"
+    
+         downloading dbip-country-lite-2024-12.csv
+         downloading dbip-city-lite-2024-12.csv
+         downloading dbip-asn-lite-2024-12.csv
+         generating /etc/geo_set.nft with set prefix geo_set for:
+         - autonomous system: 13335, hetzner online gmbh
+         - countries:         be
+         - cities:
+         done
 
 now we have a combined nftables set in */etc/geo_set.nft* 
 
@@ -73,7 +72,8 @@ The following command generates, saves AND applies a new set without reloading t
 Only the geo_set_* will be updated, no changes are applied to the main nftables configuration.
 Can be uses in a cronjob or triggerd manually.
 
-    # ./nft_geo_pvc.py --country be --asn 13335 "Hetzner Online GmbH" --city himeji --apply
+    nft_geo_pvc.py --country be --asn 13335 "Hetzner Online GmbH" --city himeji --apply
+
     generating /etc/geo_set.nft with set prefix geo_set for:
     - autonomous system: 13335, hetzner online gmbh
     - countries:         be
@@ -83,7 +83,9 @@ Can be uses in a cronjob or triggerd manually.
 
 # philosofie
 generate a named nft set with the option of combining different sources (country, city, asn) 
-and using that in your nftables script
+and using the set in your nftables script.  
+updating of the sets can happen atomic  without reloading the firewall. (without interruption or resetting the counters)
+
 
 
 # update geo ip sets
