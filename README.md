@@ -45,7 +45,7 @@ generate a set that contains:
 now we have a combined nftables set in */etc/geo_set.nft* 
 
 ### step 2: use geo set
-we can now use this file in our main firewall script [/etc/nftables.conf]
+we can now use this file in our main firewall script */etc/nftables.conf*
 the default set names are *geo_set_ipv4* and *geo_set_ipv6*
 
     flush ruleset
