@@ -12,6 +12,7 @@ features:
 * custom set name possible
 * custom table name possible
 * low memory consumption, only selected data (country, asn, city) is loaded
+* uses the free db-ip.com lite databases (https://db-ip.com/db/lite.php)
 
 
 ## install
