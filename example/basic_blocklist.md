@@ -28,7 +28,7 @@ this wil allow all traffic but drop traffic originating from The netherlands
       }
     }
 
-no activate the nftables configuration
+now activate the nftables configuration
 
     nft -f /etc/nftables.conf
 

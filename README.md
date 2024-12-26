@@ -30,16 +30,17 @@ generate a set that contains:
 - all ip's from cloudflare (as 13335) AND
 - all ip's from hetzner
 
+     
+     ./nft_geo_pvc.py --country be --asn 13335 "Hetzner Online GmbH"
 
-    # ./nft_geo_pvc.py --country be --asn 13335 "Hetzner Online GmbH"
-    downloading dbip-country-lite-2024-12.csv
-    downloading dbip-city-lite-2024-12.csv
-    downloading dbip-asn-lite-2024-12.csv
-    generating /etc/geo_set.nft with set prefix geo_set for:
-    - autonomous system: 13335, hetzner online gmbh
-    - countries:         be
-    - cities:
-    done
+     downloading dbip-country-lite-2024-12.csv
+     downloading dbip-city-lite-2024-12.csv
+     downloading dbip-asn-lite-2024-12.csv
+     generating /etc/geo_set.nft with set prefix geo_set for:
+     - autonomous system: 13335, hetzner online gmbh
+     - countries:         be
+     - cities:
+     done
 
 now we have a combined nftables set in */etc/geo_set.nft* 
 
