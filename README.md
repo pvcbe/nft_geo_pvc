@@ -2,16 +2,16 @@
 script to generate nftables sets from geoip data: ASN, country and city
 
 features:
-- create a *COMBINED* nftables set from:
-  - as number
-  - as name
-  - country
-  - city
-- auto download free db-ip.com databases, with cleanup of old files
-- update the geo set without flushing nftables (atomic update)
-- custom set name possible
-- custom table name possible
-- low memory consumption, only selected data (country, asn, city) is loaded
+*create a *COMBINED* nftables set from:
+  * as number
+  * as name
+  * country
+  * city
+* auto download free db-ip.com databases, with cleanup of old files
+* update the geo set without flushing nftables (atomic update)
+* custom set name possible
+* custom table name possible
+* low memory consumption, only selected data (country, asn, city) is loaded
 
 
 ## install
@@ -27,9 +27,9 @@ features:
 
 ### step 1: generate list
 generate a set that contains:
-- all ip's from Belgium AND 
-- all ip's from cloudflare (as 13335) AND
-- all ip's from hetzner
+* all ip's from Belgium AND 
+* all ip's from cloudflare (as 13335) AND
+* all ip's from hetzner
 
          nft_geo_pvc.py --country be --asn 13335 "Hetzner Online GmbH"
     
