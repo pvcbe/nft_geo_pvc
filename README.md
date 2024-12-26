@@ -2,7 +2,7 @@
 script to generate nftables sets from geoip data: ASN, country and city
 
 features:
-*create a *COMBINED* nftables set from:
+* create a *COMBINED* nftables set from:
   * as number
   * as name
   * country
