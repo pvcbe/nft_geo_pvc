@@ -7,12 +7,13 @@ features:
   * as name
   * country
   * city
-* auto download free db-ip.com databases, with cleanup of old files
+* uses the free db-ip.com lite databases (https://db-ip.com/db/lite.php)
+* auto download db-ip.com databases, with cleanup of old databases
 * update the geo set without flushing nftables (atomic update)
 * custom set name possible
 * custom table name possible
 * low memory consumption, only selected data (country, asn, city) is loaded
-* uses the free db-ip.com lite databases (https://db-ip.com/db/lite.php)
+
 
 
 ## install
