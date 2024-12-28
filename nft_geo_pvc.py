@@ -126,7 +126,7 @@ table {family} {table} """)
     r = subprocess.run(['nft', '-f', fp], capture_output=True)
     fp.unlink()
     if r.returncode == 0:
-        pprint("sets applied")
+        pprint("sets applied", quiet=ap.quiet)
     else:
         pprint(
             f"error while activating set: \nvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n",

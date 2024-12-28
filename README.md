@@ -23,8 +23,11 @@ features:
     wget https://raw.githubusercontent.com/pvcbe/nft_geo_pvc/refs/heads/main/nft_geo_pvc.py \
       -O /usr/local/bin/nft_geo_pvc.py
     chmod +x /usr/local/bin/nft_geo_pvc.py 
-    
 
+if you want to **remove** te script:
+
+    rm /usr/local/bin/nft_geo_pvc.py
+ 
 ## use 
 
 ### step 1: generate list
