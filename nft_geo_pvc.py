@@ -11,14 +11,14 @@ all geo ip's will be added in one ipv4 set and one ipv6.  set name  is selectabl
 example:
    ./nft_geo_pvc.py --country be
 	    generate a set with default name: geo_set_ipv4 and geo_set_ipv6,
-        stored in file /etc/geo_nft/geo_set.nft
+        saved in file /etc/geo_nft/geo_set.nft
         wich are usable in your own firewall rules
    ./nft_geo_pvc.py --country be --apply
 	    generate AND apply a set with default name: geo_set_ipv4 and geo_set_ipv6,
-        stored in file /etc/geo_nft/geo_set.nft
+        saved in file /etc/geo_nft/geo_set.nft
    ./nft_geo_pvc.py --country nl --set-prefix unwanted --apply
 	    generate and apply a set with name: unwanted_ipv4 and unwanted_ipv6
-        stored in file /etc/geo_nft/geo_unwanted.nft
+        saved in file /etc/geo_nft/geo_unwanted.nft
         wich are usable in your own firewall rules
 """
 import argparse

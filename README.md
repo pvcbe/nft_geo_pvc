@@ -12,7 +12,7 @@ features:
 * auto download db-ip.com databases, with cleanup of old databases
 * update the geo set without flushing nftables (atomic update)
 * low memory consumption, only selected data (country, asn, city) is generated and loaded
-* custom set name possible
+* custom set name possible, default names are geo_set_ipv4 and geo_set_ipv6
 * detects if country, asn or city returned no data (helpfull for typo detection)
 * detects empty sets 
 
@@ -57,7 +57,7 @@ the default set names are *geo_set_ipv4* and *geo_set_ipv6*
       chain input {
             type filter hook input priority 0;
     
-            # eth0 is the public interface
+            # eth0 is the public interface, geo_set_ipv4 and geo_set_ipv6 are the default names.
             iifname eth0 ip saddr @geo_set_ipv4 accept;
             iifname eth0 ip6 saddr @geo_set_ipv6 accept;
             # log and drop all other traffic that is not in the geo_set_*
