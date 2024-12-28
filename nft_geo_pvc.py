@@ -338,6 +338,6 @@ if __name__ == "__main__":
         if family and table:
             apply_sets(ap, family, table)
         else:
-            pprint('set not detected in live configuration, set not applied!', error=True)
+            pprint('set not detected in live configuration, set is saved but not applied!', error=True)
     pprint('done', quiet=ap.quiet)
 
