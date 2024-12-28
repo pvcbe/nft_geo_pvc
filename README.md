@@ -27,53 +27,51 @@ features:
 
 ### step 1: generate list
 generate a set that contains:
-* all ip's from Belgium AND 
-* all ip's from cloudflare (as 13335) AND
-* all ip's from hetzner
+* all ip's from Belgium  
 
-         nft_geo_pvc.py --country be --asn 13335 "Hetzner Online GmbH"
+         nft_geo_pvc.py --country be
     
          generating /etc/geo_nft/geo_set.nft with set prefix geo_set for:
-         * autonomous system: 13335, hetzner online gmbh
+         * autonomous system: -
          * countries:         be
          * cities:            -
          done
 
-now we have a combined nftables set in */etc/geo_nft/geo_set.nft* 
+now we have a geo nftables set in */etc/geo_nft/geo_set.nft* 
 
 ### step 2: use geo set
-we can now use this file in our main firewall script */etc/nftables.conf*
+we can now use this set file in our example firewall script */etc/nftables.conf*
 the default set names are *geo_set_ipv4* and *geo_set_ipv6*
 
     flush ruleset
 
-    table inet raw {
+    table inet filter {
       # load generated set from file
       include "/etc/geo_nft/geo_set.nft"
 
-      # drop as early as possible
-      chain PREROUTING {
-            type filter hook prerouting priority -300;
+      chain input {
+            type filter hook input priority 0;
     
-            # eth1 is the public interface
-            iifname eth1 ip saddr @geo_set_ipv4 accept;
-            iifname eth1 ip6 saddr @geo_set_ipv6 accept;
+            # eth0 is the public interface
+            iifname eth0 ip saddr @geo_set_ipv4 accept;
+            iifname eth0 ip6 saddr @geo_set_ipv6 accept;
             # log and drop all other traffic that is not in the geo_set_*
-            iifname eth1 log prefix "fw:geo:drop " counter drop;
+            iifname eth0 log prefix "fw:geo:drop " counter drop;
       }
     }
    
 
 ### step 3: (optional) update geo ip set
-As an example we add the city of Himeji to the set.  
+As an example we add the asn of Hetzner AND city of Himeji to the set.  
 The following command generates, saves (under /etc/geo_nft/) AND applies a new set without reloading the firewall.
-Only the geo_set_* will be updated, no changes are applied to the main nftables configuration.  
+Only the geo_set_* will be updated, no changes are applied to the running nftables configuration.  
+nftables state and counters are thus preserved.  
 Can be uses in a cronjob or triggerd manually.
 
-    nft_geo_pvc.py --country be --asn 13335 "Hetzner Online GmbH" --city himeji --apply
+    nft_geo_pvc.py --country be --asn "Hetzner Online GmbH" --city himeji --apply
 
     generating /etc/geo_nft/geo_set.nft with set prefix geo_set for:
-    - autonomous system: 13335, hetzner online gmbh
+    - autonomous system: hetzner online gmbh
     - countries:         be
     - cities:            himeji
     applied
