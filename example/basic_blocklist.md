@@ -12,20 +12,20 @@ this wil allow all traffic but drop traffic originating from The netherlands
     
     flush ruleset
 
-    # load generated set from file
-    include "/etc/geo_set.nft"
-
     table inet raw {
-      # drop as early as possible
-      chain PREROUTING {
-        type filter hook prerouting priority -300;
-	    # eth1 is the public interface
-        # log and drop traffic that is in the geo_set_*
-        iifname eth1 ip saddr @geo_set_ipv4 log prefix "fw:geo:drop ";
-        iifname eth1 ip saddr @geo_set_ipv4 drop;
-        iifname eth1 ip6 saddr @geo_set_ipv6 log prefix "fw:geo:drop ";
-        iifname eth1 ip6 saddr @geo_set_ipv6 drop;
-      }
+        # load generated set from file
+        include "/etc/geo_set.nft"
+
+        # drop as early as possible
+        chain PREROUTING {
+            type filter hook prerouting priority -300;
+            # eth0 is the public interface
+            # log and drop traffic that is in the geo_set_*
+            iifname eth0 ip saddr @geo_set_ipv4 log prefix "fw:geo:drop ";
+            iifname eth0 ip saddr @geo_set_ipv4 drop;
+            iifname eth0 ip6 saddr @geo_set_ipv6 log prefix "fw:geo:drop ";
+            iifname eth0 ip6 saddr @geo_set_ipv6 drop;
+        }
     }
 
 now activate the nftables configuration

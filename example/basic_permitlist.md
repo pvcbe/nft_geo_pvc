@@ -12,21 +12,21 @@ this wil allow all traffic from Japan and drop all other traffic
 
     flush ruleset
 
-    # include the generated set from file
-    include "/etc/geo_set.nft"
-
     table inet raw {
-      # drop as early as possible
-      chain PREROUTING {
+        # include the generated set from file
+        include "/etc/geo_set.nft"
+
+        # drop as early as possible
+        chain PREROUTING {
             type filter hook prerouting priority -300;
 
-            # eth1 is the public interface
-            iifname eth1 ip saddr @geo_set_ipv4 accept;
-            iifname eth1 ip6 saddr @geo_set_ipv6 accept;
+            # eth0 is the public interface
+            iifname eth0 ip saddr @geo_set_ipv4 accept;
+            iifname eth0 ip6 saddr @geo_set_ipv6 accept;
             # log and drop all other traffic that is not in the geo_set_*
-            iifname eth1 log prefix "fw:geo:drop ";
-            iifname eth1 counter drop;
-      }
+            iifname eth0 log prefix "fw:geo:drop ";
+            iifname eth0 counter drop;
+        }
     }
 
 

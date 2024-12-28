@@ -6,21 +6,22 @@ downloads and generate a nft set from country, city or asn from free https://db-
 all filters will be added in one ipv4 set and one ipv6.  set table and name is selectable
 
 example:
-   nft-geo.py --country be
+   ./nft-geo.py --country be
 	generate a sets with default name: geo_set_ipv4 and geo_set_ipv6,
+        note: the (empty) set should already exist in nftables
         stored in file /etc/geo_set.nft
-        the sets are now usable in your own firewall rules under the "raw" table
-   nft-geo.py --country be --apply
+        wich are usable in your own firewall rules under the raw table
+   ./nft-geo.py --country be --apply
 	generate and apply a sets with default name: geo_set_ipv4 and geo_set_ipv6,
+        note: the (empty) set should already exist in nftables
         stored in file /etc/geo_set.nft
-        the sets are now usable in your own firewall rules under the "raw" table
-   nft-geo.py --country nl --set-prefix unwanted --nft-table filter --apply
+        wich are usable in your own firewall rules under the raw table
+   ./nft-geo.py --country nl --set-prefix unwanted --apply
 	generate and apply a sets with name: unwanted_ipv4 and unwanted_ipv6
-        stored in file /etc/unwanted.nft
-        wich are usable in your own firewall rules under the "filter" table
+        note: the (empty) set should already exist in nftables
+        stored in file /etc/geo_unwanted.nft
+        wich are usable in your own firewall rules under the filter table
 """
-# license gpl3
-
 import argparse
 import requests
 import csv
@@ -30,6 +31,7 @@ import gzip
 import sys
 import subprocess
 import datetime
+import json
 from pathlib import Path
 
 
@@ -93,78 +95,97 @@ def cleanup_downloads(ap, db_country, db_city, db_asn):
             continue
         file.unlink()
 
-def flush_sets(ap):
-    # flush existing sets
-    for ip_family in "ipv4 ipv6".split():
-        # detect if set exists
-        r = subprocess.run(['nft', '--terse', 'list', 'set', 'inet', ap.nft_table, ap.set_prefix + '_' + ip_family],
-                           capture_output=True)
-        if r.returncode == 0:
-            pprint('flusing existing set ' + ap.set_prefix + '_' + ip_family, quiet=ap.quiet)
-            # if set exists flush it
-            r = subprocess.run(['nft', 'flush', 'set', 'inet', ap.nft_table, ap.set_prefix + '_' + ip_family],
-                               capture_output=True)
-            """
-            if r.returncode != 0:
-                pprint(
-                    f"error while flushing set: \nvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n",
-                    error=True)
-                pprint(r.stderr.decode(), error=True)
-            """
+
+def get_family_table(setname):
+    # detect under wich family and table the sets are loaded
+    r = subprocess.run(['nft', '--json', '--terse', 'list', 'sets'], capture_output=True)
+    if r.returncode == 0:
+        j = json.loads(r.stdout.decode())
+        for el in j['nftables']:
+            if 'set' in el:
+                if setname == el['set']['name']:
+                    # print("get_family", el['set']['family'], el['set']['table'])
+                    return el['set']['family'], el['set']['table']
+    return None, None
+
+
+def apply_sets(ap, family, table):
+    # atomic update sets
+    fp = Path(f"/var/lib/geo_nft_update_{ap.set_prefix}.nft")
+    with fp.open('w') as geo_nft:
+        date_string = datetime.datetime.now().isoformat()
+        geo_nft.write(f"""# generated with pvc_geo_nft script on {date_string}
+
+flush set {family} {table} {ap.set_prefix}_ipv4;
+flush set {family} {table} {ap.set_prefix}_ipv6;
+table {family} {table} """)
+        geo_nft.write("{\n")
+        geo_nft.write(f"""    include "{ap.target_file}";\n""")
+        geo_nft.write("}\n")
+    r = subprocess.run(['nft', '-f', fp], capture_output=True)
+    fp.unlink()
+    if r.returncode == 0:
+        pprint("sets applied")
+    else:
+        pprint(
+            f"error while activating set: \nvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n",
+            error=True)
+        pprint(r.stderr.decode(), error=True)
 
 
 def generate_sets(ap, db_country, db_city, db_asn):
-  ipv4_set = set()
-  ipv6_set = set()
+    ipv4_set = set()
+    ipv6_set = set()
 
-  # countries
-  if ap.country:
-    db = Path(ap.database_path, db_country)
-    if db.is_file():
-      csv_reader = csv.reader(db.open())
-      for line in csv_reader:
-        if len(line) > 2:
-          start = line[0]
-          stop = line[1]
-          country = line[2].lower()
-          if find_one(country, ap.country):
-            ip_validate(start, stop, ipv4_set, ipv6_set)
-    else:
-      pprint(f"country database {db} missing", quiet=ap.quiet, error=True)
+    # countries
+    if ap.country:
+        db = Path(ap.database_path, db_country)
+        if db.is_file():
+            csv_reader = csv.reader(db.open())
+            for line in csv_reader:
+                if len(line) > 2:
+                    start = line[0]
+                    stop = line[1]
+                    country = line[2].lower()
+                    if find_one(country, ap.country):
+                        ip_validate(start, stop, ipv4_set, ipv6_set)
+        else:
+            pprint(f"country database {db} missing", quiet=ap.quiet, error=True)
 
-  # city
-  if ap.city:
-    db = Path(ap.database_path, db_city)
-    if db.is_file():
-      csv_reader = csv.reader(db.open())
-      for line in csv_reader:
-        if len(line) > 2:
-          start = line[0]
-          stop = line[1]
-          city = line[5].lower()
-          if find_one(city, ap.city):
-            ip_validate(start, stop, ipv4_set, ipv6_set)
-    else:
-      pprint(f"city database {db} missing", quiet=ap.quiet, error=True)
+    # city
+    if ap.city:
+        db = Path(ap.database_path, db_city)
+        if db.is_file():
+            csv_reader = csv.reader(db.open())
+            for line in csv_reader:
+                if len(line) > 2:
+                    start = line[0]
+                    stop = line[1]
+                    city = line[5].lower()
+                    if find_one(city, ap.city):
+                        ip_validate(start, stop, ipv4_set, ipv6_set)
+        else:
+            pprint(f"city database {db} missing", quiet=ap.quiet, error=True)
 
-  # asn's
-  if ap.asn:
-    db = Path(ap.database_path, db_asn)
-    if db.is_file():
-      csv_reader = csv.reader(db.open())
-      for line in csv_reader:
-        if len(line) > 2:
-          start = line[0]
-          stop = line[1]
-          asn = line[2].lower()
-          as_org = line[3].lower()
-          af = asnfind(asn, as_org, ap.asn)
-          if af:
-            ip_validate(start, stop, ipv4_set, ipv6_set)
-    else:
-      pprint(f"asn database {db} missing", quiet=ap.quiet, error=True)
+    # asn's
+    if ap.asn:
+        db = Path(ap.database_path, db_asn)
+        if db.is_file():
+            csv_reader = csv.reader(db.open())
+            for line in csv_reader:
+                if len(line) > 2:
+                    start = line[0]
+                    stop = line[1]
+                    asn = line[2].lower()
+                    as_org = line[3].lower()
+                    af = asnfind(asn, as_org, ap.asn)
+                    if af:
+                        ip_validate(start, stop, ipv4_set, ipv6_set)
+        else:
+            pprint(f"asn database {db} missing", quiet=ap.quiet, error=True)
 
-  return sorted(list(ipv4_set)) , sorted(list(ipv6_set))
+    return sorted(list(ipv4_set)), sorted(list(ipv6_set))
+
 
 def write_set(ap, ipv4, ipv6):
     with open(ap.target_file, "w") as geo_nft:
@@ -175,11 +196,10 @@ def write_set(ap, ipv4, ipv6):
 """)
         geo_nft.write("""
 # load new sets
-table inet %set_table% {
-  set %set_prefix%_ipv4 {
+set %set_prefix%_ipv4 {
     type ipv4_addr
     flags interval
-    auto-merge""".replace("%set_prefix%", ap.set_prefix).replace("%set_table%", ap.nft_table))
+    auto-merge""".replace("%set_prefix%", ap.set_prefix))
         if ipv4:
             geo_nft.write("""
     elements = {
@@ -190,7 +210,7 @@ table inet %set_table% {
         geo_nft.write("""
   }
 
-  set %set_prefix%_ipv6 {
+set %set_prefix%_ipv6 {
     type ipv6_addr
     flags interval
     auto-merge""".replace("%set_prefix%", ap.set_prefix))
@@ -200,9 +220,7 @@ table inet %set_table% {
 \t""")
             geo_nft.write(",\n\t".join(ipv6))
             geo_nft.write("""
-    }""")
-        geo_nft.write("""
-  }
+    }
 }""")
 
 
@@ -225,13 +243,10 @@ if __name__ == "__main__":
                         help='wich cities should the set contain, exact match, case insensitive')
     parser.add_argument('--set-prefix',
                         default='geo_set',
-                        help='what should be the nftables set prefix name')
-    #parser.add_argument('-t', '--target-file',
+                        help='what should be the nftables set prefix name, saved set wil be located under /etc/<set-prefix>.nft')
+    # parser.add_argument('-t', '--target-file',
     #                    default='/etc/geo_set.nft',
     #                    help='where to save the generated set')
-    parser.add_argument('--nft-table',
-                        default='raw',
-                        help='the table name used in the nft set\'s, default is raw')
     parser.add_argument('--database-path',
                         default='/var/lib/dbip',
                         help='where to store the downloaded db\'s')
@@ -260,9 +275,9 @@ if __name__ == "__main__":
 
     ap.target_file = f"/etc/{ap.set_prefix}.nft"
     pprint(f"""generating {ap.target_file} with set prefix {ap.set_prefix} for:
-- autonomous system: {', '.join(ap.asn)}
-- countries:         {', '.join(ap.country)}
-- cities:            {', '.join(ap.city)}""", quiet=ap.quiet)
+* autonomous system: {'-' if not ap.asn else ', '.join(ap.asn)}
+* countries:         {'-' if not ap.country else ', '.join(ap.country)}
+* cities:            {'-' if not ap.city else ', '.join(ap.city)}""", quiet=ap.quiet)
 
     ipv4, ipv6 = generate_sets(ap, db_country, db_city, db_asn)
 
@@ -274,15 +289,9 @@ if __name__ == "__main__":
     write_set(ap, ipv4, ipv6)
 
     if ap.apply is True:
-        flush_sets(ap)
-
-        r = subprocess.run(['nft', '-f', ap.target_file], capture_output=True)
-        if r.returncode != 0:
-            pprint(
-                f"error while apply of nft set: \nvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n",
-                error=True)
-            pprint(r.stderr.decode(), error=True)
+        family, table = get_family_table(f"{ap.set_prefix}_ipv4")
+        if family and table:
+            apply_sets(ap, family, table)
         else:
-            pprint('applied', quiet=ap.quiet)
-
+            pprint('set not detected in live configuration, set not applied!', error=True)
     pprint('done', quiet=ap.quiet)

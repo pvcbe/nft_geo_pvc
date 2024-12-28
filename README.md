@@ -52,10 +52,10 @@ the default set names are *geo_set_ipv4* and *geo_set_ipv6*
 
     flush ruleset
 
-    # load generated set from file
-    include "/etc/geo_set.nft"
-
     table inet raw {
+      # load generated set from file
+      include "/etc/geo_set.nft"
+
       # drop as early as possible
       chain PREROUTING {
             type filter hook prerouting priority -300;
