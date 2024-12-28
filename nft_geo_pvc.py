@@ -22,7 +22,6 @@ example:
         wich are usable in your own firewall rules
 """
 import argparse
-import requests
 import csv
 import ipaddress
 import time
@@ -32,6 +31,12 @@ import subprocess
 import datetime
 import json
 from pathlib import Path
+try:
+    import requests
+except ImportError:
+    print("i need the requests library to operate, please install with: pip3 install requests")
+    sys.exit(1)
+
 
 basepath = '/etc/geo_nft'
 
