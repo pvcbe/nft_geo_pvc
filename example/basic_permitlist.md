@@ -14,7 +14,7 @@ this wil allow all traffic from Japan and drop all other traffic
 
     table inet raw {
         # include the generated set from file
-        include "/etc/geo_set.nft"
+        include "/etc/geo_nft/geo_set.nft"
 
         # drop as early as possible
         chain PREROUTING {

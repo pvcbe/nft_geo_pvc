@@ -2,25 +2,24 @@
 """
 2024 pvc_be
 
+nft_geo_pvc v0.9.0
+https://github.com/pvcbe/nft_geo_pvc
+
 downloads and generate a nft set from country, city or asn from free https://db-ip.com/ databases
-all filters will be added in one ipv4 set and one ipv6.  set table and name is selectable
+all geo ip's will be added in one ipv4 set and one ipv6.  set name  is selectable (--set-prefix)
 
 example:
-   ./nft-geo.py --country be
-	generate a sets with default name: geo_set_ipv4 and geo_set_ipv6,
-        note: the (empty) set should already exist in nftables
-        stored in file /etc/geo_set.nft
-        wich are usable in your own firewall rules under the raw table
-   ./nft-geo.py --country be --apply
-	generate and apply a sets with default name: geo_set_ipv4 and geo_set_ipv6,
-        note: the (empty) set should already exist in nftables
-        stored in file /etc/geo_set.nft
-        wich are usable in your own firewall rules under the raw table
-   ./nft-geo.py --country nl --set-prefix unwanted --apply
-	generate and apply a sets with name: unwanted_ipv4 and unwanted_ipv6
-        note: the (empty) set should already exist in nftables
-        stored in file /etc/geo_unwanted.nft
-        wich are usable in your own firewall rules under the filter table
+   ./nft_geo_pvc.py --country be
+	    generate a set with default name: geo_set_ipv4 and geo_set_ipv6,
+        stored in file /etc/geo_nft/geo_set.nft
+        wich are usable in your own firewall rules
+   ./nft_geo_pvc.py --country be --apply
+	    generate AND apply a set with default name: geo_set_ipv4 and geo_set_ipv6,
+        stored in file /etc/geo_nft/geo_set.nft
+   ./nft_geo_pvc.py --country nl --set-prefix unwanted --apply
+	    generate and apply a set with name: unwanted_ipv4 and unwanted_ipv6
+        stored in file /etc/geo_nft/geo_unwanted.nft
+        wich are usable in your own firewall rules
 """
 import argparse
 import requests
@@ -33,6 +32,8 @@ import subprocess
 import datetime
 import json
 from pathlib import Path
+
+basepath = '/etc/geo_nft'
 
 
 def pprint(text, quiet=False, error=False):
@@ -243,9 +244,9 @@ if __name__ == "__main__":
                         help='wich cities should the set contain, exact match, case insensitive')
     parser.add_argument('--set-prefix',
                         default='geo_set',
-                        help='what should be the nftables set prefix name, saved set wil be located under /etc/<set-prefix>.nft')
+                        help='what should be the nftables set prefix name, saved set wil be located under /etc/geo_nft/<set-prefix>.nft')
     # parser.add_argument('-t', '--target-file',
-    #                    default='/etc/geo_set.nft',
+    #                    default='/etc/geo_nft/geo_set.nft',
     #                    help='where to save the generated set')
     parser.add_argument('--database-path',
                         default='/var/lib/dbip',
@@ -273,7 +274,10 @@ if __name__ == "__main__":
     download(ap, db_country, db_city, db_asn)
     cleanup_downloads(ap, db_country, db_city, db_asn)
 
-    ap.target_file = f"/etc/{ap.set_prefix}.nft"
+    bp = Path(basepath)
+    bp.mkdir(exist_ok=True)
+
+    ap.target_file = bp / f"{ap.set_prefix}.nft"
     pprint(f"""generating {ap.target_file} with set prefix {ap.set_prefix} for:
 * autonomous system: {'-' if not ap.asn else ', '.join(ap.asn)}
 * countries:         {'-' if not ap.country else ', '.join(ap.country)}

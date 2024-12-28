@@ -15,7 +15,7 @@ all other traffic is allowed
 
     table inet raw {
         # load generated set from file
-        include "/etc/geo_set.nft"
+        include "/etc/geo_nft/geo_set.nft"
 
         # drop as early as possible
         chain PREROUTING {

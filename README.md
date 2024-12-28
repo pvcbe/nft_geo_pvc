@@ -11,9 +11,7 @@ features:
 * auto download db-ip.com databases, with cleanup of old databases
 * update the geo set without flushing nftables (atomic update)
 * custom set name possible
-* custom table name possible
-* low memory consumption, only selected data (country, asn, city) is loaded
-
+* low memory consumption, only selected data (country, asn, city) is generated and loaded
 
 
 ## install
@@ -35,16 +33,13 @@ generate a set that contains:
 
          nft_geo_pvc.py --country be --asn 13335 "Hetzner Online GmbH"
     
-         downloading dbip-country-lite-2024-12.csv
-         downloading dbip-city-lite-2024-12.csv
-         downloading dbip-asn-lite-2024-12.csv
-         generating /etc/geo_set.nft with set prefix geo_set for:
-         - autonomous system: 13335, hetzner online gmbh
-         - countries:         be
-         - cities:
+         generating /etc/geo_nft/geo_set.nft with set prefix geo_set for:
+         * autonomous system: 13335, hetzner online gmbh
+         * countries:         be
+         * cities:            -
          done
 
-now we have a combined nftables set in */etc/geo_set.nft* 
+now we have a combined nftables set in */etc/geo_nft/geo_set.nft* 
 
 ### step 2: use geo set
 we can now use this file in our main firewall script */etc/nftables.conf*
@@ -54,7 +49,7 @@ the default set names are *geo_set_ipv4* and *geo_set_ipv6*
 
     table inet raw {
       # load generated set from file
-      include "/etc/geo_set.nft"
+      include "/etc/geo_nft/geo_set.nft"
 
       # drop as early as possible
       chain PREROUTING {
@@ -71,13 +66,13 @@ the default set names are *geo_set_ipv4* and *geo_set_ipv6*
 
 ### step 3: (optional) update geo ip set
 As an example we add the city of Himeji to the set.  
-The following command generates, saves AND applies a new set without reloading the firewall.
-Only the geo_set_* will be updated, no changes are applied to the main nftables configuration.
+The following command generates, saves (under /etc/geo_nft/) AND applies a new set without reloading the firewall.
+Only the geo_set_* will be updated, no changes are applied to the main nftables configuration.  
 Can be uses in a cronjob or triggerd manually.
 
     nft_geo_pvc.py --country be --asn 13335 "Hetzner Online GmbH" --city himeji --apply
 
-    generating /etc/geo_set.nft with set prefix geo_set for:
+    generating /etc/geo_nft/geo_set.nft with set prefix geo_set for:
     - autonomous system: 13335, hetzner online gmbh
     - countries:         be
     - cities:            himeji
@@ -85,9 +80,9 @@ Can be uses in a cronjob or triggerd manually.
     done
 
 ## philosofie
-generate a named nft set with the option of combining different sources (country, city, asn) 
+generate a named nft set with the option of combining different selection criteria: country, city, asn 
 and using the set in your nftables script.  
-updating of the sets can happen atomic  without reloading the firewall. (without interruption or resetting the counters)
+updating of the sets can happen atomic without reloading the firewall. (without interruption or resetting the counters)
 
 
 
