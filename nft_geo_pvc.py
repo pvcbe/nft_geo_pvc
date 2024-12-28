@@ -133,13 +133,22 @@ table {family} {table} """)
             error=True)
         pprint(r.stderr.decode(), error=True)
 
+def split_list(list):
+    final_list = []
+    for l in list:
+      final_list += [e for e in l.split(",")]
+    return final_list
 
 def generate_sets(ap, db_country, db_city, db_asn):
     ipv4_set = set()
     ipv6_set = set()
 
     # countries
-    if ap.country:
+    countries = split_list(ap.country)
+    if countries:
+        hit_country = {}
+        for c in countries:
+          hit_country[c] = 0
         db = Path(ap.database_path, db_country)
         if db.is_file():
             csv_reader = csv.reader(db.open())
@@ -147,14 +156,23 @@ def generate_sets(ap, db_country, db_city, db_asn):
                 if len(line) > 2:
                     start = line[0]
                     stop = line[1]
-                    country = line[2].lower()
-                    if find_one(country, ap.country):
+                    line_country = line[2].lower()
+                    if find_one(line_country, countries):
+                        hit_country[line_country] += 1
                         ip_validate(start, stop, ipv4_set, ipv6_set)
         else:
             pprint(f"country database {db} missing", quiet=ap.quiet, error=True)
+        for c, hit in hit_country.items():
+          if hit == 0:
+            pprint(f"WARNING: no hit found for country: {c}", error=True)
 
     # city
-    if ap.city:
+    cities = split_list(ap.city)
+    if cities:
+        hit_city = {}
+        for c in cities:
+          hit_city[c] = 0
+
         db = Path(ap.database_path, db_city)
         if db.is_file():
             csv_reader = csv.reader(db.open())
@@ -163,13 +181,22 @@ def generate_sets(ap, db_country, db_city, db_asn):
                     start = line[0]
                     stop = line[1]
                     city = line[5].lower()
-                    if find_one(city, ap.city):
+                    if find_one(city, cities):
+                        hit_city[city] += 1
                         ip_validate(start, stop, ipv4_set, ipv6_set)
         else:
             pprint(f"city database {db} missing", quiet=ap.quiet, error=True)
+        for c, hit in hit_city.items():
+          if hit == 0:
+            pprint(f"WARNING: no hit found for city: {c}", error=True)
 
     # asn's
-    if ap.asn:
+    asns = split_list(ap.asn)
+    if asns:
+        hit_asn = {}
+        for asn in asns:
+          hit_asn[asn] = 0
+
         db = Path(ap.database_path, db_asn)
         if db.is_file():
             csv_reader = csv.reader(db.open())
@@ -179,11 +206,18 @@ def generate_sets(ap, db_country, db_city, db_asn):
                     stop = line[1]
                     asn = line[2].lower()
                     as_org = line[3].lower()
-                    af = asnfind(asn, as_org, ap.asn)
+                    af = asnfind(asn, as_org, asns)
                     if af:
+                        if asn in hit_asn:
+                          hit_asn[asn] += 1
+                        elif as_org in hit_asn:
+                          hit_asn[as_org] += 1
                         ip_validate(start, stop, ipv4_set, ipv6_set)
         else:
             pprint(f"asn database {db} missing", quiet=ap.quiet, error=True)
+        for a, hit in hit_asn.items():
+          if hit == 0:
+            pprint(f"WARNING: no hit found for AS: {a}", error=True)
 
     return sorted(list(ipv4_set)), sorted(list(ipv6_set))
 
@@ -221,7 +255,8 @@ set %set_prefix%_ipv6 {
 \t""")
             geo_nft.write(",\n\t".join(ipv6))
             geo_nft.write("""
-    }
+     }""")
+        geo_nft.write("""
 }""")
 
 
@@ -299,3 +334,4 @@ if __name__ == "__main__":
         else:
             pprint('set not detected in live configuration, set not applied!', error=True)
     pprint('done', quiet=ap.quiet)
+
