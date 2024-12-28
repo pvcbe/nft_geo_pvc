@@ -5,8 +5,9 @@
 nft_geo_pvc v0.9.0
 https://github.com/pvcbe/nft_geo_pvc
 
-downloads and generate a nft set from country, city or asn from free https://db-ip.com/ databases
-all geo ip's will be added in one ipv4 set and one ipv6.  set name  is selectable (--set-prefix)
+generate a nft set from country, city or asn from free https://db-ip.com/ databases
+db-ip databases are automatically downloaded by the script
+all geo ip's will be added in one ipv4 set and one ipv6.
 
 example:
    ./nft_geo_pvc.py --country be
@@ -16,9 +17,9 @@ example:
    ./nft_geo_pvc.py --country be --apply
 	    generate AND apply a set with default name: geo_set_ipv4 and geo_set_ipv6,
         saved in file /etc/geo_nft/geo_set.nft
-   ./nft_geo_pvc.py --country nl --set-prefix unwanted --apply
+   ./nft_geo_pvc.py --country nl --set-name unwanted --apply
 	    generate and apply a set with name: unwanted_ipv4 and unwanted_ipv6
-        saved in file /etc/geo_nft/geo_unwanted.nft
+        saved in file /etc/geo_nft/unwanted.nft
         wich are usable in your own firewall rules
 """
 import argparse
@@ -117,13 +118,13 @@ def get_family_table(setname):
 
 def apply_sets(ap, family, table):
     # atomic update sets
-    fp = Path(f"/var/lib/geo_nft_update_{ap.set_prefix}.nft")
+    fp = Path(f"/var/lib/geo_nft_update_{ap.set_name}.nft")
     with fp.open('w') as geo_nft:
         date_string = datetime.datetime.now().isoformat()
         geo_nft.write(f"""# generated with pvc_geo_nft script on {date_string}
 
-flush set {family} {table} {ap.set_prefix}_ipv4;
-flush set {family} {table} {ap.set_prefix}_ipv6;
+flush set {family} {table} {ap.set_name}_ipv4;
+flush set {family} {table} {ap.set_name}_ipv6;
 table {family} {table} """)
         geo_nft.write("{\n")
         geo_nft.write(f"""    include "{ap.target_file}";\n""")
@@ -236,10 +237,10 @@ def write_set(ap, ipv4, ipv6):
 """)
         geo_nft.write("""
 # load new sets
-set %set_prefix%_ipv4 {
+set %set_name%_ipv4 {
     type ipv4_addr
     flags interval
-    auto-merge""".replace("%set_prefix%", ap.set_prefix))
+    auto-merge""".replace("%set_name%", ap.set_name))
         if ipv4:
             geo_nft.write("""
     elements = {
@@ -250,10 +251,10 @@ set %set_prefix%_ipv4 {
         geo_nft.write("""
   }
 
-set %set_prefix%_ipv6 {
+set %set_name%_ipv6 {
     type ipv6_addr
     flags interval
-    auto-merge""".replace("%set_prefix%", ap.set_prefix))
+    auto-merge""".replace("%set_name%", ap.set_name))
         if ipv6:
             geo_nft.write("""
     elements = {
@@ -282,15 +283,15 @@ if __name__ == "__main__":
                         type=str.lower,
                         default=[],
                         help='wich cities should the set contain, exact match, case insensitive')
-    parser.add_argument('--set-prefix',
+    parser.add_argument('--set-name',
                         default='geo_set',
-                        help='what should be the nftables set prefix name, saved set wil be located under /etc/geo_nft/<set-prefix>.nft')
+                        help='what should be the nftables set name, saved set wil be located under /etc/geo_nft/<set-name>.nft')
     # parser.add_argument('-t', '--target-file',
     #                    default='/etc/geo_nft/geo_set.nft',
     #                    help='where to save the generated set')
     parser.add_argument('--database-path',
                         default='/var/lib/dbip',
-                        help='where to store the downloaded db\'s')
+                        help='where to store the downloaded db\'s (default /var/lib/dbip)')
     parser.add_argument('--apply',
                         action='store_true',
                         default=False,
@@ -317,8 +318,8 @@ if __name__ == "__main__":
     bp = Path(basepath)
     bp.mkdir(exist_ok=True)
 
-    ap.target_file = bp / f"{ap.set_prefix}.nft"
-    pprint(f"""generating {ap.target_file} with set prefix {ap.set_prefix} for:
+    ap.target_file = bp / f"{ap.set_name}.nft"
+    pprint(f"""generating {ap.target_file} with set name {ap.set_name} for:
 * autonomous system: {'-' if not ap.asn else ', '.join(ap.asn)}
 * countries:         {'-' if not ap.country else ', '.join(ap.country)}
 * cities:            {'-' if not ap.city else ', '.join(ap.city)}""", quiet=ap.quiet)
@@ -333,7 +334,7 @@ if __name__ == "__main__":
     write_set(ap, ipv4, ipv6)
 
     if ap.apply is True:
-        family, table = get_family_table(f"{ap.set_prefix}_ipv4")
+        family, table = get_family_table(f"{ap.set_name}_ipv4")
         if family and table:
             apply_sets(ap, family, table)
         else:
