@@ -92,5 +92,5 @@ it is recommended to run the script at least monthly, as the free db-ip.com data
 
 
 ## update geo ip sets
-it is recommended to run the nft_geo_pvc.py script monthly as the free db-ip.com databases are updated monthly
+it is recommended to run the `nft_geo_pvc.py` script monthly as the free db-ip.com databases are updated monthly
 
