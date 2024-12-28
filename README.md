@@ -36,7 +36,7 @@ generate a set that contains:
 
          nft_geo_pvc.py --country be
     
-         generating /etc/geo_nft/geo_set.nft with set prefix geo_set for:
+         generating /etc/geo_nft/geo_set.nft with set name geo_set for:
          * autonomous system: -
          * countries:         be
          * cities:            -
@@ -75,7 +75,7 @@ Can be uses in a cronjob or triggerd manually.
 
     nft_geo_pvc.py --country be --asn "Hetzner Online GmbH" --city himeji --apply
 
-    generating /etc/geo_nft/geo_set.nft with set prefix geo_set for:
+    generating /etc/geo_nft/geo_set.nft with set name geo_set for:
     - autonomous system: hetzner online gmbh
     - countries:         be
     - cities:            himeji
