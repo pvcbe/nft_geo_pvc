@@ -2,7 +2,7 @@
 script to generate nftables sets from geoip data: ASN, country and city
 
 features:
-* create a *COMBINED* nftables set from:
+* create a *COMBINED* nftables set from (possible, not mandatory):
   * as number
   * as name
   * country
@@ -10,9 +10,10 @@ features:
 * uses the free db-ip.com lite databases (https://db-ip.com/db/lite.php)
 * auto download db-ip.com databases, with cleanup of old databases
 * update the geo set without flushing nftables (atomic update)
-* custom set name possible
 * low memory consumption, only selected data (country, asn, city) is generated and loaded
-
+* custom set name possible
+* detects if country, asn or city returned no data (helpfull for typo detection)
+* detects empty sets 
 
 ## install
 
