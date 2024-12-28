@@ -3,10 +3,11 @@ script to generate nftables sets from geoip data: ASN, country and city
 
 features:
 * create a *COMBINED* nftables set from (possible, not mandatory):
-  * as number
-  * as name
-  * country
+  * country (use 2 letter [iso](https://en.wikipedia.org/wiki/ISO_3166-1) country code)
   * city
+  * [AS number](https://en.wikipedia.org/wiki/Autonomous_system_%28Internet%29) (isp unique number)
+  * AS name (isp unique name)
+
 * uses the free db-ip.com lite databases (https://db-ip.com/db/lite.php)
 * auto download db-ip.com databases, with cleanup of old databases
 * update the geo set without flushing nftables (atomic update)
@@ -28,7 +29,7 @@ features:
 
 ### step 1: generate list
 generate a set that contains:
-* all ip's from Belgium  
+* all ip's from Belgium, use country code be
 
          nft_geo_pvc.py --country be
     
