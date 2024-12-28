@@ -82,11 +82,13 @@ Can be uses in a cronjob or triggerd manually.
     applied
     done
 
+
+
 ## philosofie
 generate a named nft set with the option of combining different selection criteria: country, city, asn 
 and using the set in your nftables script.  
 updating of the sets can happen atomic without reloading the firewall. (without interruption or resetting the counters)
-
+it is recommended to run the script at least monthly, as the free db-ip.com databases are updated monthly
 
 
 ## update geo ip sets
