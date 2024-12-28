@@ -63,7 +63,7 @@ def ip_validate(start, stop, ipv4, ipv6):
             ipaddress.IPv6Address(stop)
             ipv6.add(start + "-" + stop)
         except ipaddress.AddressValueError:
-            pprint(f"not an ip: {start}  -  {stop}", ap.quiet, error=True)
+            pprint(f"WARNING: not an ip: {start}  -  {stop}", ap.quiet, error=True)
 
 
 def download(ap, db_country, db_city, db_asn):
@@ -84,9 +84,9 @@ def download(ap, db_country, db_city, db_asn):
                         with gzip.GzipFile(fileobj=r.raw) as gz:
                             target.write(gz.read())
                 else:
-                    pprint(f"error while downloading {f}", error=True)
+                    pprint(f"ERROR: while downloading {f}", error=True)
             except requests.exceptions.ConnectionError as e:
-                pprint(f"error while downloading {f}", error=True)
+                pprint(f"ERROR: while downloading {f}", error=True)
 
 
 def cleanup_downloads(ap, db_country, db_city, db_asn):
@@ -161,7 +161,7 @@ def generate_sets(ap, db_country, db_city, db_asn):
                         hit_country[line_country] += 1
                         ip_validate(start, stop, ipv4_set, ipv6_set)
         else:
-            pprint(f"country database {db} missing", quiet=ap.quiet, error=True)
+            pprint(f"WARNING: country database {db} missing",  error=True)
         for c, hit in hit_country.items():
           if hit == 0:
             pprint(f"WARNING: no hit found for country: {c}", error=True)
@@ -185,7 +185,7 @@ def generate_sets(ap, db_country, db_city, db_asn):
                         hit_city[city] += 1
                         ip_validate(start, stop, ipv4_set, ipv6_set)
         else:
-            pprint(f"city database {db} missing", quiet=ap.quiet, error=True)
+            pprint(f"WARNING city database {db} missing", error=True)
         for c, hit in hit_city.items():
           if hit == 0:
             pprint(f"WARNING: no hit found for city: {c}", error=True)
@@ -214,7 +214,7 @@ def generate_sets(ap, db_country, db_city, db_asn):
                           hit_asn[as_org] += 1
                         ip_validate(start, stop, ipv4_set, ipv6_set)
         else:
-            pprint(f"asn database {db} missing", quiet=ap.quiet, error=True)
+            pprint(f"WARNING: asn database {db} missing", error=True)
         for a, hit in hit_asn.items():
           if hit == 0:
             pprint(f"WARNING: no hit found for AS: {a}", error=True)
