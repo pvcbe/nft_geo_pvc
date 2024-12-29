@@ -39,12 +39,12 @@ generate a set that contains:
 
          nft_geo_pvc.py --country be
     
-         generating /etc/geo_nft/geo_set.nft with set name geo_set for:
-         * autonomous system: -
-         * continents:        -
-         * regions:           -
-         * countries:         be
-         * cities:            -
+         generating /etc/geo_nft/geo_set.nft with set name geo_set_ipv4 and geo_set_ipv6 for:
+             * autonomous system: -
+             * continents:        -
+             * countries:         be
+             * regions:           -
+             * cities:            -
          done
 
 now we have a geo nftables set in */etc/geo_nft/geo_set.nft* 
@@ -80,12 +80,13 @@ Can be uses in a cronjob or triggerd manually.
 
     nft_geo_pvc.py --country be --asn "Hetzner Online GmbH" --city himeji --apply
 
-    generating /etc/geo_nft/geo_set.nft with set name geo_set for:
-    * autonomous system: hetzner online gmbh
-    * continents:        -
-    * regions:           -
-    * countries:         be
-    * cities:            himeji
+    generating /etc/geo_nft/geo_set.nft with set name geo_set_ipv4 and geo_set_ipv6 for:
+        * autonomous system: hetzner online gmbh
+        * continents:        -
+        * countries:         be
+        * regions:           -
+        * cities:            himeji
+    NOTICE: searching for continent, region or city data will take some time
     sets applied
     done
 
