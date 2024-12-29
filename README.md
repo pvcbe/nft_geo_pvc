@@ -15,7 +15,7 @@ script to generate nftables sets from geoip data: continent, region, country, ci
 * update the geo set without flushing nftables (atomic update)
 * low memory consumption, only selected data is generated and loaded
 * custom set name possible (default names are geo_set_ipv4 and geo_set_ipv6)
-* query host/ip for 
+* query host option for finding information on a host/ip
 * detects if continent, region, country, city or ASn returned no data (helpfull for typo detection)
 * warns for empty sets 
 
