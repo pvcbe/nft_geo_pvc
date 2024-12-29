@@ -1,6 +1,7 @@
-in this example the firewall will only accept traffic from cloudflare (as13335) to ports 80 and 443
-other traffic to 80 and 443 is not allowed
-all other traffic is allowed  
+in this example the firewall will:
+* only accept traffic from cloudflare (as13335) to ports 80 and 443
+* other traffic to 80 and 443 is not allowed
+* all other traffic is allowed.  
 
 # step 1: generate geo set
 
@@ -46,6 +47,12 @@ updating the geo ip set is possible without reloading te firewall
 
     nft_geo_pvc.py --asn 13335 --apply
 
-it is recommended to do this at least monthly, as the free db-ip.com databases are updated monthly 
+it is recommended to do this at least monthly, as the free db-ip.com databases are updated monthly
+
+# optional: adding extra AS selectors
+updating the geo ip set is possible without reloading te firewall
+
+    nft_geo_pvc.py --asn 13335 "EDPNET Belgium BV" "Digi Romania S.A" --apply
+ 
 
 succes!

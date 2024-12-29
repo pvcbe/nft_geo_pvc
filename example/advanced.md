@@ -1,11 +1,14 @@
-in this example the firewall will only accept traffic from belgium to ports 80 and 443
-and rate limit all traffic from The netherlands
-other traffic is accepted
+in this example the firewall will
+* accept traffic from belgium to ports 80 and 443
+* drop other traffic to ports 80 and 443
+* rate limit all traffic from The netherlands
+* other traffic is accepted
 
 # step 1: generate geo set
 
     # generate the allow list with the default name: geo_set_ipv4 and geo_set_ipv6
     nft_geo_pvc.py --country be
+
     # this will create a set with name ratelimit (generates ratelimit_ipv4 and ratelimit_ipv6) for dutch ip's
     # in the "filter" table and save the set in /etc/geo_nft/ratelimit.nft
     nft_geo_pvc.py --set-name ratelimit --country nl

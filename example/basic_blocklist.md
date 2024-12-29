@@ -1,4 +1,6 @@
-this wil allow all traffic but drop traffic originating from The netherlands
+in this example the firewall will:
+* allow all traffic
+* drop traffic originating from The netherlands
 
 # step 1: generate geo set
 

@@ -1,4 +1,6 @@
-this wil allow all traffic from Japan and drop all other traffic
+in this example the firewall will:
+* allow all traffic from Japan 
+* count and drop all other traffic
 
 # step 1: generate geo set
 
