@@ -1,5 +1,5 @@
 ## Introduction
-script to generate nftables sets from geoip data: continent, region, country, city or asn
+script to generate nftables sets from geoip data: continent, region, country, city, custom ip list or asn
 
 ## features
 * create a *COMBINED* nftables set from selected data (possible, not mandatory):
