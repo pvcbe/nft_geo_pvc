@@ -154,6 +154,34 @@ def generate_sets(ap, db_country, db_city, db_asn):
     ipv4_set = set()
     ipv6_set = set()
 
+    # custom ip's
+    custom_ips_list = split_arg_list(ap.custom_ips)
+    if custom_ips_list:
+        for custom_ip in custom_ips_list:
+            if '-' in custom_ip:
+                try:
+                    splited_custom_ip_start, splited_custom_ip_stop = custom_ip.split('-')
+                    ip_validate_and_add_to_set(splited_custom_ip_start, splited_custom_ip_stop, ipv4_set, ipv6_set)
+                except ValueError:
+                    pprint(f"ERROR: invalid ip or range {custom_ip}")
+            else:
+                # value's added to set needs to be a string
+                try:
+                    ipv4_set.add(str(ipaddress.IPv4Network(custom_ip, strict=False)))
+                except:
+                    try:
+                        ipv6_set.add(str(ipaddress.IPv6Network(custom_ip, strict=False)))
+                    except:
+                        try:
+                            for ip in socket.getaddrinfo(custom_ip, 0):
+                                if ip[1] is socket.SocketKind.SOCK_RAW and ip[0] is socket.AddressFamily.AF_INET:
+                                    ipv4_set.add(str(ipaddress.IPv4Address(ip[4][0])))
+                                if ip[1] is socket.SocketKind.SOCK_RAW and ip[0] is socket.AddressFamily.AF_INET6:
+                                    ipv6_set.add(str(ipaddress.IPv6Address(ip[4][0])))
+                        except socket.gaierror:
+                            pprint(f"WARNING: host {custom_ip} not an ip address and not resolvable via dns",
+                               error=True)
+
     # asn
     asn_filter_list = split_arg_list(ap.asn)
     if asn_filter_list:
@@ -405,6 +433,12 @@ def main():
                         type=str.lower,
                         default=[],
                         help='wich cities should the set contain, exact match, case insensitive')
+    parser.add_argument('--custom-ips',
+                        nargs='+',
+                        type=str.lower,
+                        default=[],
+                        help='add extra ip, range, subnet or hostname from this list, working dns needed for hostnames\n'
+                             'nft_geo_pvc.py --custom-ips 1.1.1.1 www.google.com 192.168.1.0/24 2a00:1450:4001:111::-2a00:1450:4001:666::')
     parser.add_argument('--set-name',
                         default='geo_set',
                         help='what should be the nftables set name, saved set wil be located under /etc/geo_nft/<set-name>.nft')
@@ -438,7 +472,7 @@ def main():
         print(f"searching the databases for: {ap.query_host}")
         query_host(ap, db_country, db_city, db_asn)
         sys.exit()
-    elif ap.continent == [] and ap.region == [] and ap.country == [] and ap.city == [] and ap.asn == []:
+    elif ap.continent == [] and ap.region == [] and ap.country == [] and ap.city == [] and ap.asn == [] and ap.custom_ips == []:
         parser.print_help()
         pprint("\n\nno continent, country, region, city or asn specified", error=True)
         sys.exit()
@@ -448,6 +482,7 @@ def main():
 
     ap.target_file = bp / f"{ap.set_name}.nft"
     pprint(f"""generating {ap.target_file} with set name {ap.set_name}_ipv4 and {ap.set_name}_ipv6 for:
+    * custom ip's:       {'-' if not ap.custom_ips else ', '.join(ap.custom_ips)}
     * autonomous system: {'-' if not ap.asn else ', '.join(ap.asn)}
     * continents:        {'-' if not ap.continent else ', '.join(ap.continent)}
     * countries:         {'-' if not ap.country else ', '.join(ap.country)}

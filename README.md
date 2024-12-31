@@ -9,6 +9,7 @@ script to generate nftables sets from geoip data: continent, region, country, ci
   * city
   * [AS number](https://en.wikipedia.org/wiki/Autonomous_system_%28Internet%29) (isp unique number)
   * AS name (isp unique name)
+  * custom ip, list, range or hostname
 
 * uses the free db-ip.com lite csv databases (https://db-ip.com/db/lite.php)
 * auto download db-ip.com databases, with cleanup of old databases
@@ -72,15 +73,16 @@ the default set names are *geo_set_ipv4* and *geo_set_ipv6*
    
 
 ### step 3: (optional) update geo ip set
-As an example we add the ASn of Hetzner AND city of Himeji to the set.  
+As an example we add the ASn of Hetzner AND city of Himeji AND ip 1.1.1.1 to the set.  
 The following command generates, saves (under /etc/geo_nft/) AND applies a new set without reloading the firewall.
 Only the geo_set_* will be updated, no changes are applied to the running nftables configuration.  
 nftables state and counters are thus preserved.  
 Can be uses in a cronjob or triggerd manually.
 
-    nft_geo_pvc.py --country be --asn "Hetzner Online GmbH" --city himeji --apply
+    nft_geo_pvc.py --country be --asn "Hetzner Online GmbH" --city himeji --custom-ips 1.1.1.1 --apply
 
     generating /etc/geo_nft/geo_set.nft with set name geo_set_ipv4 and geo_set_ipv6 for:
+        * custom ip's:       1.1.1.1
         * autonomous system: hetzner online gmbh
         * continents:        -
         * countries:         be
@@ -92,7 +94,7 @@ Can be uses in a cronjob or triggerd manually.
 
 
 ## philosofie
-generate a named nft set with the option of combining different selection criteria: continent, region, country, city, ASn 
+generate a named nft set with the option of combining different selection criteria: continent, region, country, city, ASn, hostnames, ip's
 and using the set in your nftables script.  
 updating of the sets can happen atomic without reloading the firewall. (without interruption or resetting the counters)
 
