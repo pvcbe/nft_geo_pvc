@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 2024 pvc_be
+GNU GENERAL PUBLIC LICENSE Version 3
 
 nft_geo_pvc v0.9.0
 https://github.com/pvcbe/nft_geo_pvc
