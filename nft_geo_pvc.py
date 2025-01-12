@@ -44,6 +44,7 @@ except ImportError:
 
 
 basepath = '/etc/geo_nft'
+nft_path = '/usr/sbin/nft'
 
 
 def pprint(text, quiet=False, error=False):
@@ -109,7 +110,7 @@ def cleanup_downloads(ap, db_country, db_city, db_asn):
 
 def get_family_table(set_name):
     # detect under wich family and table the sets are loaded
-    r = subprocess.run(['nft', '--json', '--terse', 'list', 'sets'], capture_output=True)
+    r = subprocess.run([nft_path, '--json', '--terse', 'list', 'sets'], capture_output=True)
     if r.returncode == 0:
         try:
             j = json.loads(r.stdout.decode())
@@ -135,7 +136,7 @@ table {family} {table} """)
         geo_nft.write("{\n")
         geo_nft.write(f"""    include "{ap.target_file}";\n""")
         geo_nft.write("}\n")
-    r = subprocess.run(['nft', '-f', nft_update_file], capture_output=True)
+    r = subprocess.run([nft_path, '-f', nft_update_file], capture_output=True)
     nft_update_file.unlink()
     if r.returncode == 0:
         pprint("sets applied", quiet=ap.quiet)
@@ -400,7 +401,7 @@ def query_host(ap, db_country, db_city, db_asn):
 
 def detect_nftables():
     try:
-        r = subprocess.run(['nft', '--version'], capture_output=True)
+        r = subprocess.run([nft_path, '--version'], capture_output=True)
         if r.returncode == 0:
             return True
     except FileNotFoundError:
@@ -475,7 +476,8 @@ def main():
         sys.exit()
     elif ap.continent == [] and ap.region == [] and ap.country == [] and ap.city == [] and ap.asn == [] and ap.custom_ips == []:
         parser.print_help()
-        pprint("\n\nno continent, country, region, city or asn specified", error=True)
+        pprint("\n\nno continent, country, region, city, asn or custom ip's specified\n"
+               "exiting", error=True)
         sys.exit()
 
     bp = Path(basepath)
