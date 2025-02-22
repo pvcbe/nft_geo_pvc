@@ -102,11 +102,29 @@ def download(ap, db_country, db_city, db_asn):
 
 def cleanup_downloads(ap, db_country, db_city, db_asn):
     glob = Path(ap.database_path).glob('dbip-*.csv')
+    # don't delete files if there are only 3 left, this is to ensure there is a working db when downloads fail
+    if len(list(glob)) <= 3:
+        return
     for dpip_database in glob:
         if dpip_database.match(db_country) or dpip_database.match(db_city) or dpip_database.match(db_asn):
             continue
         dpip_database.unlink()
 
+def get_valid_database_path(ap, db_name):
+    # create glob patern
+    db = db_name.replace(ap.datum, '*')
+
+    glob_dbs = []
+    for db_file in Path(ap.database_path).glob(db):
+      glob_dbs.append(db_file)
+
+    # sort found db's by modify time
+    glob_dbs.sort(key=lambda k:k.stat().st_mtime)
+
+    # last element is the newest, return it
+    return_db = glob_dbs.pop()
+    #pprint(f"selected db {return_db}")
+    return return_db
 
 def get_family_table(set_name):
     # detect under wich family and table the sets are loaded
@@ -187,7 +205,7 @@ def generate_sets(ap, db_country, db_city, db_asn):
     # asn
     asn_filter_list = split_arg_list(ap.asn)
     if asn_filter_list:
-        db = Path(ap.database_path, db_asn)
+        db = get_valid_database_path(ap, db_asn)
         if db.is_file():
             hit_asn = {}
             for asn in asn_filter_list:
@@ -217,7 +235,7 @@ def generate_sets(ap, db_country, db_city, db_asn):
     # country
     country_filter_list = split_arg_list(ap.country)
     if country_filter_list:
-        db = Path(ap.database_path, db_country)
+        db = get_valid_database_path(ap, db_country)
         if db.is_file():
             hit_country = {}
             for c in country_filter_list:
@@ -243,7 +261,7 @@ def generate_sets(ap, db_country, db_city, db_asn):
     region_filter_list = split_arg_list(ap.region)
     city_filter_list = split_arg_list(ap.city)
     if continent_filter_list or region_filter_list or city_filter_list:
-        db = Path(ap.database_path, db_city)
+        db = get_valid_database_path(ap, db_city)
         if db.is_file():
             pprint("NOTICE: searching for continent, region or city data will take some time", quiet=ap.quiet)
             hits = {
@@ -459,10 +477,10 @@ def main():
                         help='make the script quiet')
     ap = parser.parse_args()
 
-    datum = time.strftime("%Y-%m")
-    db_country = f"dbip-country-lite-{datum}.csv"
-    db_city = f"dbip-city-lite-{datum}.csv"
-    db_asn = f"dbip-asn-lite-{datum}.csv"
+    ap.datum = time.strftime("%Y-%m")
+    db_country = f"dbip-country-lite-{ap.datum}.csv"
+    db_city = f"dbip-city-lite-{ap.datum}.csv"
+    db_asn = f"dbip-asn-lite-{ap.datum}.csv"
 
     download(ap, db_country, db_city, db_asn)
     cleanup_downloads(ap, db_country, db_city, db_asn)
