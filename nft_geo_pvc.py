@@ -91,14 +91,27 @@ def download(ap, db_country, db_city, db_asn):
                 r = requests.get(url + database_file_name + '.gz', stream=True)
                 if r.status_code == 200:
                     pprint(f"downloading {database_file_name}", quiet=ap.quiet)
-                    with database_file_target.open('wb') as target:
+                    with database_file_target.with_suffix(".downloading").open('wb') as target:
                         with gzip.GzipFile(fileobj=r.raw) as gz:
-                            target.write(gz.read())
+                            for data in gz:
+                                target.write(data)
+                    database_file_target.with_suffix(".downloading").rename(database_file_target)
                 else:
                     pprint(f"ERROR: while downloading {database_file_name}", error=True)
             except requests.exceptions.ConnectionError as e:
                 pprint(f"ERROR: while downloading {database_file_name}", error=True)
-
+                try:
+                    database_file_target.with_suffix(".downloading").unlink()
+                except:
+                    pass
+            except FileNotFoundError as e:
+                pprint(f"ERROR: renaming to {database_file_name}, file not found", error=True)
+            except EOFError as e:
+                pprint(f"ERROR: while unzipping {database_file_name}", error=True)
+                try:
+                    database_file_target.unlink()
+                except:
+                    pass
 
 def cleanup_downloads(ap, db_country, db_city, db_asn):
     glob = Path(ap.database_path).glob('dbip-*.csv')
