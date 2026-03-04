@@ -60,7 +60,10 @@ def find_one(search, search_list):
 
 
 def asnfind(asn, asn_org, asn_filter_list):
-    return [a for a in asn_filter_list if a == asn or a == asn_org]
+    for asn_search_filter in asn_filter_list:
+        if asn_search_filter == asn or asn_search_filter == asn_org:
+            return True
+    return False
 
 
 def ip_validate_and_add_to_set(start_ip, stop_ip, ipv4, ipv6):
@@ -77,20 +80,20 @@ def ip_validate_and_add_to_set(start_ip, stop_ip, ipv4, ipv6):
             pprint(f"WARNING: not an ip: {start_ip}  -  {stop_ip}", error=True)
 
 
-def download(ap, db_country, db_city, db_asn):
+def download(argument_parser, db_country, db_city, db_asn):
     url = 'https://download.db-ip.com/free/'
 
-    download_directory = Path(ap.database_path)
+    download_directory = Path(argument_parser.database_path)
     if not download_directory.is_dir():
         download_directory.mkdir()
 
     for database_file_name in [db_country, db_city, db_asn]:
-        database_file_target = Path(ap.database_path, database_file_name)
+        database_file_target = Path(argument_parser.database_path, database_file_name)
         if not database_file_target.is_file():
             try:
                 r = requests.get(url + database_file_name + '.gz', stream=True)
                 if r.status_code == 200:
-                    pprint(f"downloading {database_file_name}", quiet=ap.quiet)
+                    pprint(f"downloading {database_file_name}", quiet=argument_parser.quiet)
                     with database_file_target.with_suffix(".downloading").open('wb') as target:
                         with gzip.GzipFile(fileobj=r.raw) as gz:
                             for data in gz:
@@ -113,8 +116,8 @@ def download(ap, db_country, db_city, db_asn):
                 except:
                     pass
 
-def cleanup_downloads(ap, db_country, db_city, db_asn):
-    glob = Path(ap.database_path).glob('dbip-*.csv')
+def cleanup_downloads(argument_parser, db_country, db_city, db_asn):
+    glob = Path(argument_parser.database_path).glob('dbip-*.csv')
     # don't delete files if there are only 3 left, this is to ensure there is a working db when downloads fail
     if len(list(glob)) <= 3:
         return
@@ -123,12 +126,12 @@ def cleanup_downloads(ap, db_country, db_city, db_asn):
             continue
         dpip_database.unlink()
 
-def get_valid_database_path(ap, db_name):
+def get_valid_database_path(argument_parser, db_name):
     # create glob patern
-    db = db_name.replace(ap.datum, '*')
+    db = db_name.replace(argument_parser.datum, '*')
 
     glob_dbs = []
-    for db_file in Path(ap.database_path).glob(db):
+    for db_file in Path(argument_parser.database_path).glob(db):
       glob_dbs.append(db_file)
 
     # sort found db's by modify time
@@ -140,7 +143,7 @@ def get_valid_database_path(ap, db_name):
     return return_db
 
 def get_family_table(set_name):
-    # detect under wich family and table the sets are loaded
+    # detect under which family and table the sets are loaded
     r = subprocess.run([nft_path, '--json', '--terse', 'list', 'sets'], capture_output=True)
     if r.returncode == 0:
         try:
@@ -154,23 +157,24 @@ def get_family_table(set_name):
     return None, None
 
 
-def apply_sets(ap, family, table):
+def apply_sets(argument_parser, family, table):
     # atomic update sets
-    nft_update_file = Path(f"/var/lib/geo_nft_update_{ap.set_name}.nft")
+    nft_update_file = Path(f"/var/lib/geo_nft_update_{argument_parser.set_name}.nft")
+    # todo: try catch for ro fs
     with nft_update_file.open('w') as geo_nft:
         date_string = datetime.datetime.now().isoformat()
         geo_nft.write(f"""# generated with pvc_geo_nft script on {date_string}
 
-flush set {family} {table} {ap.set_name}_ipv4;
-flush set {family} {table} {ap.set_name}_ipv6;
+flush set {family} {table} {argument_parser.set_name}_ipv4;
+flush set {family} {table} {argument_parser.set_name}_ipv6;
 table {family} {table} """)
         geo_nft.write("{\n")
-        geo_nft.write(f"""    include "{ap.target_file}";\n""")
+        geo_nft.write(f"""    include "{argument_parser.target_file}";\n""")
         geo_nft.write("}\n")
     r = subprocess.run([nft_path, '-f', nft_update_file], capture_output=True)
     nft_update_file.unlink()
     if r.returncode == 0:
-        pprint("sets applied", quiet=ap.quiet)
+        pprint("sets applied", quiet=argument_parser.quiet)
     else:
         pprint(
             f"error while activating set: \nvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n",
@@ -180,15 +184,17 @@ table {family} {table} """)
 def split_arg_list(source_list):
     final_list = []
     for list_item in source_list:
-      final_list += [element for element in list_item.split(",")]
+      for element in list_item.split(","):
+         if element == '': continue
+         final_list.append(element.strip())
     return final_list
 
-def generate_sets(ap, db_country, db_city, db_asn):
+def generate_sets(argument_parser, db_country, db_city, db_asn):
     ipv4_set = set()
     ipv6_set = set()
 
     # custom ip's
-    custom_ips_list = split_arg_list(ap.custom_ips)
+    custom_ips_list = split_arg_list(argument_parser.custom_ips)
     if custom_ips_list:
         for custom_ip in custom_ips_list:
             if '-' in custom_ip:
@@ -198,7 +204,7 @@ def generate_sets(ap, db_country, db_city, db_asn):
                 except ValueError:
                     pprint(f"ERROR: invalid ip or range {custom_ip}")
             else:
-                # value's added to set needs to be a string
+                # values added to set needs to be a string
                 try:
                     ipv4_set.add(str(ipaddress.IPv4Network(custom_ip, strict=False)))
                 except:
@@ -216,17 +222,17 @@ def generate_sets(ap, db_country, db_city, db_asn):
                                error=True)
 
     # asn
-    asn_filter_list = split_arg_list(ap.asn)
+    asn_filter_list = split_arg_list(argument_parser.asn)
     if asn_filter_list:
-        db = get_valid_database_path(ap, db_asn)
+        db = get_valid_database_path(argument_parser, db_asn)
         if db.is_file():
             hit_asn = {}
             for asn in asn_filter_list:
                 hit_asn[asn] = 0
-
-            csv_reader = csv.reader(db.open())
+            asn_csv = db.open()
+            csv_reader = csv.reader(asn_csv)
             for line in csv_reader:
-                if len(line) > 2:
+                if len(line) >= 4:
                     start = line[0]
                     stop = line[1]
                     asn = line[2].lower()
@@ -241,21 +247,22 @@ def generate_sets(ap, db_country, db_city, db_asn):
             for a, hit in hit_asn.items():
                 if hit == 0:
                     pprint(f"WARNING: no hit found for AS: {a}", error=True)
+            asn_csv.close()
         else:
             pprint(f"ERROR: asn database {db} missing", error=True)
 
 
     # country
-    country_filter_list = split_arg_list(ap.country)
+    country_filter_list = split_arg_list(argument_parser.country)
     if country_filter_list:
-        db = get_valid_database_path(ap, db_country)
+        db = get_valid_database_path(argument_parser, db_country)
         if db.is_file():
             hit_country = {}
             for c in country_filter_list:
                 hit_country[c] = 0
             csv_reader = csv.reader(db.open())
             for line in csv_reader:
-                if len(line) > 2:
+                if len(line) >= 3:
                     start = line[0]
                     stop = line[1]
                     line_country = line[2].lower()
@@ -270,13 +277,13 @@ def generate_sets(ap, db_country, db_city, db_asn):
 
 
     # continent, region, city
-    continent_filter_list = split_arg_list(ap.continent)
-    region_filter_list = split_arg_list(ap.region)
-    city_filter_list = split_arg_list(ap.city)
+    continent_filter_list = split_arg_list(argument_parser.continent)
+    region_filter_list = split_arg_list(argument_parser.region)
+    city_filter_list = split_arg_list(argument_parser.city)
     if continent_filter_list or region_filter_list or city_filter_list:
-        db = get_valid_database_path(ap, db_city)
+        db = get_valid_database_path(argument_parser, db_city)
         if db.is_file():
-            pprint("NOTICE: searching for continent, region or city data will take some time", quiet=ap.quiet)
+            pprint("NOTICE: searching for continent, region or city data will take some time", quiet=argument_parser.quiet)
             hits = {
                 "continent": {},
                 "region": {},
@@ -291,7 +298,7 @@ def generate_sets(ap, db_country, db_city, db_asn):
 
             csv_reader = csv.reader(db.open())
             for line in csv_reader:
-                if len(line) > 2:
+                if len(line) >= 5:
                     start = line[0]
                     stop = line[1]
                     continent = line[2].lower()
@@ -316,42 +323,46 @@ def generate_sets(ap, db_country, db_city, db_asn):
     return sorted(list(ipv4_set)), sorted(list(ipv6_set))
 
 
-def write_set(ap, ipv4, ipv6):
-    with open(ap.target_file, "w") as geo_nft:
+def write_set(argument_parser, ipv4, ipv6):
+    target_file = Path(argument_parser.target_file)
+
+    with target_file.with_suffix(".generating").open('wb') as geo_nft:
         date_string = datetime.datetime.now().isoformat()
-        geo_nft.write(f"""# generated with pvc_geo_nft script on {date_string}
+        geo_nft.write(bytes(f"""# generated with pvc_geo_nft script on {date_string}
 # used geo ip databases from https://db-ip.com with Creative Commons Attribution 4.0 International License
 
-""")
-        geo_nft.write("""
+""", 'utf-8'))
+        geo_nft.write(bytes("""
 # load new sets
 set %set_name%_ipv4 {
     type ipv4_addr
     flags interval
-    auto-merge""".replace("%set_name%", ap.set_name))
+    auto-merge""".replace("%set_name%", argument_parser.set_name), 'utf-8'))
         if ipv4:
-            geo_nft.write("""
+            geo_nft.write(bytes("""
     elements = {
-\t""")
-            geo_nft.write(",\n\t".join(ipv4))
-            geo_nft.write("""
-    }""")
-        geo_nft.write("""
+  """, 'utf-8'))
+            geo_nft.write(bytes(",\n  ".join(ipv4), 'utf-8'))
+            geo_nft.write(bytes("""
+    }""", 'utf-8'))
+        geo_nft.write(bytes("""
   }
 
 set %set_name%_ipv6 {
     type ipv6_addr
     flags interval
-    auto-merge""".replace("%set_name%", ap.set_name))
+    auto-merge""".replace("%set_name%", argument_parser.set_name), 'utf-8'))
         if ipv6:
-            geo_nft.write("""
+            geo_nft.write(bytes("""
     elements = {
-\t""")
-            geo_nft.write(",\n\t".join(ipv6))
-            geo_nft.write("""
-     }""")
-        geo_nft.write("""
-}""")
+  """, 'utf-8'))
+            geo_nft.write(bytes(",\n  ".join(ipv6), 'utf-8'))
+            geo_nft.write(bytes("""
+     }""", 'utf-8'))
+        geo_nft.write(bytes("""
+}""", 'utf-8'))
+        target_file.with_suffix(".generating").rename(target_file)
+
 
 
 def query_line(query_ips, line):
@@ -374,22 +385,22 @@ def query_line(query_ips, line):
     return None
 
 
-def query_host(ap, db_country, db_city, db_asn):
+def query_host(argument_parser, db_country, db_city, db_asn):
     query_ips = set()
     try:
-        query_ips.add(ipaddress.IPv4Address(ap.query_host))
+        query_ips.add(ipaddress.IPv4Address(argument_parser.query_host))
     except ipaddress.AddressValueError:
         try:
-            query_ips.add(ipaddress.IPv6Address(ap.query_host))
+            query_ips.add(ipaddress.IPv6Address(argument_parser.query_host))
         except ipaddress.AddressValueError:
             try:
-                for ip in socket.getaddrinfo(ap.query_host, 0):
+                for ip in socket.getaddrinfo(argument_parser.query_host, 0):
                     if ip[1] is socket.SocketKind.SOCK_RAW and ip[0] is socket.AddressFamily.AF_INET:
                         query_ips.add(ipaddress.IPv4Address(ip[4][0]))
                     if ip[1] is socket.SocketKind.SOCK_RAW and ip[0] is socket.AddressFamily.AF_INET6:
                         query_ips.add(ipaddress.IPv6Address(ip[4][0]))
             except socket.gaierror:
-                pprint(f"sorry, query host {ap.query_host} not an ip address and not resolvable via dns", error=True)
+                pprint(f"sorry, query host {argument_parser.query_host} not an ip address and not resolvable via dns", error=True)
                 return
     print("query host resolving resulted in the following ip's:")
     match = {}
@@ -405,12 +416,12 @@ def query_host(ap, db_country, db_city, db_asn):
         }
 
     print("searching databases, the csv databases are not search optimized so this can take a while...")
-    for database in [(db_country, "country"), (db_city, "city"), (db_asn, "asn")]:
+    for database_file, database_name in [(db_country, "country"), (db_city, "city"), (db_asn, "asn")]:
     #for db in [(db_country, "country"), (db_asn, "asn")]:
-        database_name = database[1]
-        csv_file = Path(ap.database_path, database[0])
+        csv_file = Path(argument_parser.database_path, database_file)
         if csv_file.is_file():
-            csv_reader = csv.reader(csv_file.open())
+            csvfile = csv_file.open()
+            csv_reader = csv.reader(csvfile)
             for line in csv_reader:
                 if len(line) > 2:
                     ip = query_line(query_ips, line)
@@ -421,9 +432,10 @@ def query_host(ap, db_country, db_city, db_asn):
                             match[ip][database_name].add(line[2])
                             match[ip]["as_name"].add(line[3])
                         elif database_name == "city":
-                            match[ip][database_name].add(line[5])
                             match[ip]["continent"].add(line[2])
                             match[ip]["region"].add(line[4])
+                            match[ip][database_name].add(line[5])
+            csvfile.close()
     print("\ngeoip info:")
     for ip, value in match.items():
         print(f"\n- {ip}")
@@ -436,36 +448,38 @@ def detect_nftables():
         if r.returncode == 0:
             return True
     except FileNotFoundError:
-        return False
+        pass
+    return False
 
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=__doc__)
     parser.add_argument('-a', '--asn',
                         nargs='+',
+                        action='extend',
                         type=str.lower,
                         default=[],
-                        help='wich autonomous system numbers or names should the set contain, exact match, case insensitive')
+                        help='which autonomous system numbers or names should the set contain, exact match, case insensitive')
     parser.add_argument('--continent',
                         nargs='+',
                         type=str.lower,
                         default=[],
-                        help='wich continent should the set contain, use 2 letter iso continent code, case insensitive')
+                        help='which continent should the set contain, use 2 letter iso continent code, case insensitive')
     parser.add_argument('-c', '--country',
                         nargs='+',
                         type=str.lower,
                         default=[],
-                        help='wich countries should the set contain, use 2 letter iso country code, case insensitive')
+                        help='which countries should the set contain, use 2 letter iso country code, case insensitive')
     parser.add_argument('--region',
                         nargs='+',
                         type=str.lower,
                         default=[],
-                        help='wich regions should the set contain, exact match, case insensitive')
+                        help='which regions should the set contain, exact match, case insensitive')
     parser.add_argument('--city',
                         nargs='+',
                         type=str.lower,
                         default=[],
-                        help='wich cities should the set contain, exact match, case insensitive')
+                        help='which cities should the set contain, exact match, case insensitive')
     parser.add_argument('--custom-ips',
                         nargs='+',
                         type=str.lower,
@@ -474,7 +488,7 @@ def main():
                              'nft_geo_pvc.py --custom-ips 1.1.1.1 www.google.com 192.168.1.0/24 2a00:1450:4001:111::-2a00:1450:4001:666::')
     parser.add_argument('--set-name',
                         default='geo_set',
-                        help='what should be the nftables set name, saved set wil be located under /etc/geo_nft/<set-name>.nft')
+                        help='name of the nftables set, saved set wil be located under /etc/geo_nft/<set-name>.nft')
     parser.add_argument('--database-path',
                         default='/var/lib/dbip',
                         help='where to store the downloaded db\'s (default /var/lib/dbip)')
@@ -488,43 +502,44 @@ def main():
                         action='store_true',
                         default=False,
                         help='make the script quiet')
-    ap = parser.parse_args()
+    argument_parser = parser.parse_args()
 
-    ap.datum = time.strftime("%Y-%m")
-    db_country = f"dbip-country-lite-{ap.datum}.csv"
-    db_city = f"dbip-city-lite-{ap.datum}.csv"
-    db_asn = f"dbip-asn-lite-{ap.datum}.csv"
+    argument_parser.datum = time.strftime("%Y-%m")
+    db_country = f"dbip-country-lite-{argument_parser.datum}.csv"
+    db_city = f"dbip-city-lite-{argument_parser.datum}.csv"
+    db_asn = f"dbip-asn-lite-{argument_parser.datum}.csv"
 
-    download(ap, db_country, db_city, db_asn)
-    cleanup_downloads(ap, db_country, db_city, db_asn)
     if not detect_nftables():
-        print("nftables binary not found or in path, i cannot work without it exiting")
-        sys.exit()
+        print("nftables binary not found or in path, i cannot work without it, exiting")
+        sys.exit(1)
+    download(argument_parser, db_country, db_city, db_asn)
+    cleanup_downloads(argument_parser, db_country, db_city, db_asn)
 
-    if ap.query_host:
-        print(f"searching the databases for: {ap.query_host}")
-        query_host(ap, db_country, db_city, db_asn)
-        sys.exit()
-    elif ap.continent == [] and ap.region == [] and ap.country == [] and ap.city == [] and ap.asn == [] and ap.custom_ips == []:
+
+    if argument_parser.query_host:
+        print(f"searching the databases for: {argument_parser.query_host}")
+        query_host(argument_parser, db_country, db_city, db_asn)
+        sys.exit(1)
+    elif argument_parser.continent == [] and argument_parser.region == [] and argument_parser.country == [] and argument_parser.city == [] and argument_parser.asn == [] and argument_parser.custom_ips == []:
         parser.print_help()
         pprint("\n\nno continent, country, region, city, asn or custom ip's specified\n"
                "exiting", error=True)
-        sys.exit()
+        sys.exit(1)
 
     bp = Path(basepath)
     bp.mkdir(exist_ok=True)
 
-    ap.target_file = bp / f"{ap.set_name}.nft"
-    pprint(f"""generating {ap.target_file} with set name {ap.set_name}_ipv4 and {ap.set_name}_ipv6 for:
-    * custom ip's:       {'-' if not ap.custom_ips else ', '.join(ap.custom_ips)}
-    * autonomous system: {'-' if not ap.asn else ', '.join(ap.asn)}
-    * continents:        {'-' if not ap.continent else ', '.join(ap.continent)}
-    * countries:         {'-' if not ap.country else ', '.join(ap.country)}
-    * regions:           {'-' if not ap.region else ', '.join(ap.region)}
-    * cities:            {'-' if not ap.city else ', '.join(ap.city)}""",
-           quiet=ap.quiet)
+    argument_parser.target_file = bp / f"{argument_parser.set_name}.nft"
+    pprint(f"""generating {argument_parser.target_file} with set name {argument_parser.set_name}_ipv4 and {argument_parser.set_name}_ipv6 for:
+    * custom ip's:       {'-' if not argument_parser.custom_ips else ', '.join(argument_parser.custom_ips)}
+    * autonomous system: {'-' if not argument_parser.asn else ', '.join(split_arg_list(argument_parser.asn))}
+    * continents:        {'-' if not argument_parser.continent else ', '.join(split_arg_list(argument_parser.continent))}
+    * countries:         {'-' if not argument_parser.country else ', '.join(split_arg_list(argument_parser.country))}
+    * regions:           {'-' if not argument_parser.region else ', '.join(split_arg_list(argument_parser.region))}
+    * cities:            {'-' if not argument_parser.city else ', '.join(split_arg_list(argument_parser.city))}""",
+           quiet=argument_parser.quiet)
 
-    ipv4, ipv6 = generate_sets(ap, db_country, db_city, db_asn)
+    ipv4, ipv6 = generate_sets(argument_parser, db_country, db_city, db_asn)
 
     if not ipv4:
         pprint("WARNING: ipv4 set is empty", error=True)
@@ -532,16 +547,16 @@ def main():
         pprint("WARNING: ipv6 set is empty", error=True)
 
     # even if the sets are empty, write the config so that nftables includes still work
-    write_set(ap, ipv4, ipv6)
+    write_set(argument_parser, ipv4, ipv6)
 
-    if ap.apply is True:
-        family, table = get_family_table(f"{ap.set_name}_ipv4")
+    if argument_parser.apply is True:
+        family, table = get_family_table(f"{argument_parser.set_name}_ipv4")
         if family and table:
-            apply_sets(ap, family, table)
+            apply_sets(argument_parser, family, table)
         else:
             pprint('set not detected in live configuration, set is saved but not applied!', error=True)
 
-    pprint('done', quiet=ap.quiet)
+    pprint('done', quiet=argument_parser.quiet)
 
 if __name__ == "__main__":
     try:

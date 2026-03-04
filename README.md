@@ -17,7 +17,7 @@ script to generate nftables sets from geoip data: continent, region, country, ci
 * low memory consumption, only selected data is generated and loaded
 * custom set name possible (default names are geo_set_ipv4 and geo_set_ipv6)
 * query host option for finding information on a host/ip
-* detects if continent, region, country, city or ASn returned no data (helpfull for typo detection)
+* detects if continent, region, country, city or ASN returned no data (helpfull for typo detection)
 * warns for empty sets 
 
 ## install
@@ -57,23 +57,23 @@ the default set names are *geo_set_ipv4* and *geo_set_ipv6*
     flush ruleset
 
     table inet filter {
-      # load generated set from file
-      include "/etc/geo_nft/geo_set.nft"
-
-      chain input {
-            type filter hook input priority 0;
-    
-            # eth0 is the public interface, geo_set_ipv4 and geo_set_ipv6 are the default names.
-            iifname eth0 ip saddr @geo_set_ipv4 accept;
-            iifname eth0 ip6 saddr @geo_set_ipv6 accept;
-            # log and drop all other traffic that is not in the geo_set_*
-            iifname eth0 log prefix "fw:geo:drop " counter drop;
-      }
+        # load generated set from file
+        include "/etc/geo_nft/geo_set.nft"
+  
+        chain input {
+              type filter hook input priority 0;
+      
+              # eth0 is the public interface, geo_set_ipv4 and geo_set_ipv6 are the default names.
+              iifname eth0 ip saddr @geo_set_ipv4 accept;
+              iifname eth0 ip6 saddr @geo_set_ipv6 accept;
+              # log and drop all other traffic that is not in the geo_set_*
+              iifname eth0 log prefix "fw:geo:drop " counter drop;
+        }
     }
    
 
 ### step 3: (optional) update geo ip set
-As an example we add the ASn of Hetzner AND city of Himeji AND ip 1.1.1.1 to the set.  
+As an example we add the ASN of Hetzner AND city of Himeji AND ip 1.1.1.1 to the set.  
 The following command generates, saves (under /etc/geo_nft/) AND applies a new set without reloading the firewall.
 Only the geo_set_* will be updated, no changes are applied to the running nftables configuration.  
 nftables state and counters are thus preserved.  
@@ -94,7 +94,7 @@ Can be uses in a cronjob or triggerd manually.
 
 
 ## philosofie
-generate a named nft set with the option of combining different selection criteria: continent, region, country, city, ASn, hostnames, ip's
+generate a named nft set with the option of combining different selection criteria: continent, region, country, city, ASN, hostnames, ip's
 and using the set in your nftables script.  
 updating of the sets can happen atomic without reloading the firewall. (without interruption or resetting the counters)
 
@@ -102,7 +102,7 @@ updating of the sets can happen atomic without reloading the firewall. (without 
 ## notes
 * using the continent, region or city selector is slow, this is not a bug.  
   The script needs to loop all lines in a big csv database to get this data.
-  Country and ASn data are faster because the database is smaller
+  Country and ASN data are faster because the database is smaller
 * AS information can be found:
   * running
   
