@@ -117,11 +117,15 @@ def download(argument_parser, db_country, db_city, db_asn):
                     pass
 
 def cleanup_downloads(argument_parser, db_country, db_city, db_asn):
-    glob = Path(argument_parser.database_path).glob('dbip-*.csv')
+    database_glob = Path(argument_parser.database_path).glob('dbip-*.csv')
+    database_list = sorted(database_glob)
+
     # don't delete files if there are only 3 left, this is to ensure there is a working db when downloads fail
-    if len(list(glob)) <= 3:
+    if len(database_list) <= 3:
         return
-    for dpip_database in glob:
+
+    # loop list and skip current databases
+    for dpip_database in database_list:
         if dpip_database.match(db_country) or dpip_database.match(db_city) or dpip_database.match(db_asn):
             continue
         dpip_database.unlink()
